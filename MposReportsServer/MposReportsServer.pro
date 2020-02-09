@@ -1,6 +1,6 @@
 QT -= gui
 
-CONFIG += c++11 console
+CONFIG += c++11 console network
 CONFIG -= app_bundle
 
 # The following define makes your compiler emit warnings if you use
@@ -21,3 +21,7 @@ SOURCES += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+include(../QtWebApp/httpserver/httpserver.pri)
+include(../QtWebApp/templateengine/templateengine.pri)
+include(../QtWebApp/logging/logging.pri)
