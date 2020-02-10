@@ -17,12 +17,13 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
 
     QByteArray username=request.getParameter("username");
     QByteArray password=request.getParameter("password");
+    QByteArray objectID=request.getParameter("objectID");
     qDebug("username=%s",username.constData());
     qDebug("password=%s",password.constData());
+    qDebug("objectID=%s",objectID.constData());
 
     if(username.length() !=0){
         userID=getUserID(QString(username), QString(password));
-        qDebug() << "Current USER id =" << userID;
     }
 
     QByteArray path=request.getPath();
@@ -32,10 +33,13 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
         response.redirect("/login.html");
         return;
     } else if (path=="/login.html") {
-            staticFileController->service(request,response);
+        staticFileController->service(request,response);
     } else if (path == "/objects" && userID > 0){
         session.set("userID",userID);
         objectsList.service(request,response);
+    } else if(path == "/shifts" && objectID.length()>0) {
+        session.set("objectID",objectID);
+        shiftList.service(request,response);
     }
     else {
         response.setStatus(404,"Not found");

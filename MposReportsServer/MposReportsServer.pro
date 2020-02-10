@@ -23,11 +23,11 @@ include(../QtWebApp/logging/logging.pri)
 
 
 SOURCES += \
-        DataBase/database.cpp \
         global.cpp \
         main.cpp \
         objectslist.cpp \
-        requestmapper.cpp
+        requestmapper.cpp \
+        shiftslist.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -37,10 +37,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     ../docroot/login.html \
     ../docroot/objectslist.html \
+    ../docroot/shiftslist.html \
     ../etc/MPosOnlineReports.ini
 
 HEADERS += \
-    DataBase/database.h \
     global.h \
     objectslist.h \
-    requestmapper.h
+    requestmapper.h \
+    shiftslist.h

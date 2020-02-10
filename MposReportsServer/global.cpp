@@ -7,6 +7,7 @@ StaticFileController* staticFileController;
 HttpSessionStore* sessionStore;
 TemplateCache *objectsList;
 
+
 QString searchConfigFile()
 {
     QString binDir=QCoreApplication::applicationDirPath();

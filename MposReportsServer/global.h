@@ -17,5 +17,6 @@ extern HttpSessionStore* sessionStore;
 
 extern TemplateCache *objectsList;
 
+
 extern QString searchConfigFile();
 #endif // GLOBAL_H

@@ -34,7 +34,6 @@ void ObjectsList::service(HttpRequest &request, HttpResponse &response)
     HttpSession session=sessionStore->getSession(request,response,true);
     userID = session.get("userID").toUInt();
 
-
     QSqlQuery q(db);
     q.prepare("select c.clientname from clients c "
               "INNER JOIN clientusers u ON u.client_id = c.client_id "

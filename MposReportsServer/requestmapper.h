@@ -2,6 +2,7 @@
 #define REQUESTMAPPER_H
 #include "httprequesthandler.h"
 #include "objectslist.h"
+#include "shiftslist.h"
 #include <QSqlQueryModel>
 
 using namespace stefanfrings;
@@ -22,6 +23,7 @@ private:
     QSqlQueryModel *modelUsers;
     uint userID;
     ObjectsList objectsList;
+    ShiftsList shiftList;
 };
 
 #endif // REQUESTMAPPER_H

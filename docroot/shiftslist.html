@@ -1,0 +1,55 @@
+<html>
+<head>
+    <style type='text/css'>
+    table.tableobj {
+        border: solid 1px #088A29;
+        border-collapse: collapse;
+     }
+     </style>
+
+</head>
+    <body>
+        <h2 align = center>Выберите АЗС и нажмите кнопку Показать отчет</h2>
+        <form action=/report method=post name=radioform>
+        <table class=tableobj align = center border = 1>
+         <caption>Список смен</caption>
+         <tr>
+            <th>Смена</th>
+            <th>Z-отчет</th>
+            <th>Открыта</th>
+            <th>Закрыта</th>
+            <th>Оператор</th>
+         </tr>
+            {loop row}
+                <tr>
+                    <td align = center>
+                        <input name=shiftID type=radio value={row.shiftID}>{row.shiftID}
+                    </td>
+                    <td>{row.znum}</td>
+                    <td>{row.datopen}</td>
+                    <td>{row.datclose}</td>
+                    <td>{row.operator}</td>
+                </tr>
+            {end row}
+        </table>
+        <p><p>
+        <table align=center>
+            <tr>
+                <td align = center><input align = center type="submit" value="Показать отчет"></td>
+            </tr>
+        </table>
+        </form>
+        <script>
+        document.querySelector('[name=radioform]').addEventListener('submit', function(e){
+            var pair = document.querySelectorAll('[name=objectID]'),
+            sel = [].filter.call(pair, function(el){
+                return el.checked;
+            });
+            if( (pair.length / 2) !== sel.length ) {
+                e.preventDefault();
+                alert('Не выбрана ни одна АЗС!');
+            }
+        });
+        </script>
+    </body>
+</html>
