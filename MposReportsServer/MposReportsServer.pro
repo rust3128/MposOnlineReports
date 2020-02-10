@@ -36,7 +36,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     ../docroot/login.html \
-    ../etc/MposOnlineReports.ini
+    ../docroot/objectslist.html \
+    ../etc/MPosOnlineReports.ini
 
 HEADERS += \
     DataBase/database.h \

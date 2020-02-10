@@ -1,6 +1,7 @@
 
 #include <QCoreApplication>
 #include <QSettings>
+#include <QSqlDatabase>
 
 
 #include "httplistener.h"
@@ -30,11 +31,25 @@ int main(int argc, char *argv[])
     // Получаем настройки базы данных
     QSettings *databaseSettings = new QSettings(configFileName,QSettings::IniFormat,&a);
     databaseSettings->beginGroup("Database");
-    DataBase *db = new DataBase(databaseSettings,&a);
-    if(!db->openDatabase()){
-        qFatal("Не могу открвыть базу даных! Ааварийное завершение работы.");
+
+    QSqlDatabase db = QSqlDatabase::addDatabase("QIBASE");
+    db.setHostName(databaseSettings->value("Server").toString());
+//    db.setPort(dbSet->value("Port").toInt());
+    db.setDatabaseName(databaseSettings->value("Database").toString());
+    db.setUserName(databaseSettings->value("User").toString());
+    db.setPassword(databaseSettings->value("Password").toString());
+
+    if(!db.open()){
+        qFatal("Не удалось открыть базу данных");
         return 1;
     }
+    qInfo() << QString("DB Connecion: %1:%2").arg(db.hostName()).arg(db.databaseName());
+
+    // Configure template cache
+    QSettings* templateSettings=new QSettings(configFileName,QSettings::IniFormat,&a);
+    templateSettings->beginGroup("templates");
+    objectsList = new TemplateCache(templateSettings,&a);
+
 
     // Static file controller
     QSettings* fileSettings=new QSettings(configFileName,QSettings::IniFormat,&a);

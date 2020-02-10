@@ -5,6 +5,7 @@
 FileLogger* logger;
 StaticFileController* staticFileController;
 HttpSessionStore* sessionStore;
+TemplateCache *objectsList;
 
 QString searchConfigFile()
 {
@@ -24,7 +25,7 @@ QString searchConfigFile()
     searchList.append(binDir+"/../../../../../"+appName+"/etc"); // for development with shadow build
     searchList.append(QDir::rootPath()+"etc/opt");
     searchList.append(QDir::rootPath()+"etc");
-    searchList.append("/home/rust/develop/MposWebServer/etc");
+    searchList.append("/home/rust/develop/MposOnlineReports/etc");
 
     foreach (QString dir, searchList)
     {

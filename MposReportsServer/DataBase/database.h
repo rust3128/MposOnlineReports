@@ -15,6 +15,7 @@ public:
 private:
     QSqlDatabase db;
     QSettings *dbSet;
+    QString connectionMame;
 };
 
 #endif // DATABASE_H
