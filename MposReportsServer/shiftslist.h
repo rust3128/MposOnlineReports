@@ -5,6 +5,7 @@
 #include <QSqlError>
 #include <QSqlQueryModel>
 
+
 using namespace stefanfrings;
 
 class ShiftsList : public HttpRequestHandler
@@ -24,6 +25,7 @@ private:
     QSqlQueryModel *modelShifts;
     uint userID;
     uint objectID;
+    QStringList termData;
 };
 
 #endif // SHIFTSLIST_H

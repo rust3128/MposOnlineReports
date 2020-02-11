@@ -39,6 +39,11 @@ void ShiftsList::service(HttpRequest &request, HttpResponse &response)
     qDebug("language=%s",qPrintable(language));
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     Template t=objectsList->getTemplate("shiftslist");
+    t.setVariable("terminalID", termData.at(0));
+    qDebug() << termData;
+    t.setVariable("name", termData.at(1));
+    t.setVariable("address", termData.at(2));
+
     t.loop("row",shiftCount);
     for(int i=0;i<shiftCount;++i){
         QString number = QString::number(i);
@@ -59,25 +64,35 @@ void ShiftsList::service(HttpRequest &request, HttpResponse &response)
 void ShiftsList::openObjectDB()
 {
     QSqlQuery *q = new QSqlQuery(db);
-    q->prepare("SELECT o.server, o.objdb, o.objdbuser, o.pass from objects o where o.object_id=:objectID");
+    q->prepare("SELECT o.server, o.objdb, o.objdbuser, o.pass, o.terminal_id, o.name, o.address from objects o where o.object_id=:objectID");
     q->bindValue(":objectID",objectID);
     if(!q->exec()){
         qCritical() << "Не могу прочитать данные о подключению к объекту";
         return;
     }
     q->next();
+
+
     dbObj = QSqlDatabase::addDatabase("QIBASE","azs"+QString::number(objectID));
     dbObj.setHostName(q->value(0).toString());
     dbObj.setDatabaseName(q->value(1).toString());
     dbObj.setUserName(q->value(2).toString());
     dbObj.setPassword(q->value(3).toString());
     if(!dbObj.open()){
-        qCritical() << "Не могу отрыть базу данных АЗС";
+        qCritical() << "Не могу отрыть базу данных АЗС" << dbObj.lastError().text() ;
         return;
     }
+   termData.clear();
+   termData.append(q->value(4).toString());
+   termData.append(q->value(5).toString());
+   termData.append(q->value(6).toString());
+   q->finish();
    modelShifts = new QSqlQueryModel();
    modelShifts->setQuery("SELECT first 30 s.shift_id, s.znumber, s.datopen, s.datclose, TRIM(o.fio) from shifts s "
                          "INNER JOIN operators o ON o.operator_id=s.operator_id "
                          "order by s.shift_id DESC",dbObj);
+
+
+
 
 }

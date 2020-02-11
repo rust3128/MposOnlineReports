@@ -18,6 +18,7 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
     QByteArray username=request.getParameter("username");
     QByteArray password=request.getParameter("password");
     QByteArray objectID=request.getParameter("objectID");
+
     qDebug("username=%s",username.constData());
     qDebug("password=%s",password.constData());
     qDebug("objectID=%s",objectID.constData());
