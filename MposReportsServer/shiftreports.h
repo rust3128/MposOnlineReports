@@ -27,6 +27,7 @@ private:
     uint shiftID;
     uint terminalID;
     QStringList termData;
+    QSqlQueryModel *modelCounters;
 };
 
 #endif // SHIFTREPORTS_H

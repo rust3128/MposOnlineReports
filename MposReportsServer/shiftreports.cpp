@@ -32,8 +32,8 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     HttpSession session=sessionStore->getSession(request,response,true);
     objectID = session.get("objectID").toUInt();
     shiftID = session.get("shiftID").toUInt();
-    qDebug() << "object ID" << objectID << "shiftID" << shiftID;
-
+    qDebug() << "object ID report" << objectID << "shiftID report" << shiftID;
+    openObjectDB();
     QByteArray language=request.getHeader("Accept-Language");
     qDebug("language=%s",qPrintable(language));
     response.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -44,25 +44,14 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     t.setVariable("address", termData.at(2));
 
     //Таблица счетчики
-    QSqlQuery *q = new QSqlQuery(dbObj);
-    q->prepare("SELECT c.TERMINAL_ID, c.SHIFT_ID, F.SHORTNAME, TANKS.COLOR, c.DISPENSER_ID, c.E_FROM, c.E_TO, "
-               "(c.E_TO - c.E_FROM) AS E_ADD, c.SPILLED, c.M_FROM, c.M_TO, (c.M_TO - c.M_FROM) "
-               "AS M_ADD, (c.M_TO - c.M_FROM - c.E_TO + c.E_FROM) AS FAIL "
-               "FROM COUNTERS c LEFT JOIN TANKS LEFT JOIN FUELS F ON F.FUEL_ID = c.FUEL_ID "
-               "ON TANKS.TANK_ID = c.TANK_ID "
-               "WHERE c.TERMINAL_ID = :terminalID AND c.SHIFT_ID = :shiftID "
-               "ORDER BY c.TERMINAL_ID, c.SHIFT_ID, F.fuel_id, c.DISPENSER_ID");
-    q->bindValue(":terminalID", terminalID);
-    q->bindValue("shiftID",shiftID);
-    q->exec();
-    int rowCount = q->size();
+    const int rowCount = modelCounters->rowCount();
     t.loop("row",rowCount);
-    uint i = 0;
-    while(q->next()){
+    for(int i=0;i<rowCount;++i) {
         QString number = QString::number(i);
-        QString shortName = q->value(2).toString();
-        t.setVariable("row"+number+".shortName", shortName);
-        ++i;
+        t.setVariable("row"+number+".shortName", modelCounters->data(modelCounters->index(i,2)).toString());
+        t.setVariable("row"+number+".num", modelCounters->data(modelCounters->index(i,4)).toString());
+        t.setVariable("row"+number+".beg_el",QString::number(modelCounters->data(modelCounters->index(i,5)).toDouble(),'f',2) );
+
     }
 
 
@@ -82,7 +71,9 @@ void ShiftReports::openObjectDB()
 
     terminalID = q->value(4).toUInt();
 
-    dbObj = QSqlDatabase::addDatabase("QIBASE","azs"+QString::number(objectID));
+    dbObj = QSqlDatabase::database("azs"+QString::number(objectID));
+
+//    dbObj = QSqlDatabase::addDatabase("QIBASE","azs"+QString::number(terminalID));
     dbObj.setHostName(q->value(0).toString());
     dbObj.setDatabaseName(q->value(1).toString());
     dbObj.setUserName(q->value(2).toString());
@@ -95,4 +86,16 @@ void ShiftReports::openObjectDB()
     termData.append(q->value(4).toString());
     termData.append(q->value(5).toString());
     termData.append(q->value(6).toString());
+    q->finish();
+    modelCounters = new QSqlQueryModel();
+    QString strSQL = QString("SELECT c.TERMINAL_ID, c.SHIFT_ID, F.SHORTNAME, TANKS.COLOR, c.DISPENSER_ID, c.E_FROM, c.E_TO, "
+                              "(c.E_TO - c.E_FROM) AS E_ADD, c.SPILLED, c.M_FROM, c.M_TO, (c.M_TO - c.M_FROM) "
+                              "AS M_ADD, (c.M_TO - c.M_FROM - c.E_TO + c.E_FROM) AS FAIL "
+                              "FROM COUNTERS c LEFT JOIN TANKS LEFT JOIN FUELS F ON F.FUEL_ID = c.FUEL_ID "
+                              "ON TANKS.TANK_ID = c.TANK_ID "
+                              "WHERE c.TERMINAL_ID = %1 AND c.SHIFT_ID = %2 "
+                              "ORDER BY c.TERMINAL_ID, c.SHIFT_ID, F.fuel_id, c.DISPENSER_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelCounters->setQuery(strSQL,dbObj);
 }

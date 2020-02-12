@@ -31,7 +31,7 @@ void ShiftsList::service(HttpRequest &request, HttpResponse &response)
 {
     HttpSession session=sessionStore->getSession(request,response,true);
     objectID = session.get("objectID").toUInt();
-    qDebug() << "object ID" << objectID;
+    qDebug() << "object ID from shiftlist.cpp" << objectID;
     openObjectDB();
     const int shiftCount = modelShifts->rowCount();
     QByteArray language=request.getHeader("Accept-Language");

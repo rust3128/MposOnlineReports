@@ -45,6 +45,7 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
         shiftList.service(request,response);
     } else if (path == "/report" && shiftID.length()>0){
         session.set("shiftID",shiftID);
+        shiftReport.service(request,response);
     }
     else {
         response.setStatus(404,"Not found");
