@@ -18,10 +18,12 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
     QByteArray username=request.getParameter("username");
     QByteArray password=request.getParameter("password");
     QByteArray objectID=request.getParameter("objectID");
+    QByteArray shiftID =request.getParameter("shiftID");
 
     qDebug("username=%s",username.constData());
     qDebug("password=%s",password.constData());
     qDebug("objectID=%s",objectID.constData());
+    qDebug("shiftID=%s",shiftID.constData());
 
     if(username.length() !=0){
         userID=getUserID(QString(username), QString(password));
@@ -41,6 +43,8 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
     } else if(path == "/shifts" && objectID.length()>0) {
         session.set("objectID",objectID);
         shiftList.service(request,response);
+    } else if (path == "/report" && shiftID.length()>0){
+        session.set("shiftID",shiftID);
     }
     else {
         response.setStatus(404,"Not found");

@@ -1,0 +1,33 @@
+
+<html>
+<head>
+    <style type='text/css'>
+    table.tableobj {
+        border: solid 1px #088A29;
+        border-collapse: collapse;
+     }
+     </style>
+
+</head>
+    <body>
+    <table border='1' bordercolor='#a9a7af' cellspacing='0' cellpadding='0' border='false'>
+        <tr>
+          <td align=center bgColor='#C9C7CF'><b>НП</td>
+          <td align=center bgColor='#C9C7CF'><b>№</td>
+          <td align=center bgColor='#C9C7CF'><b>Нач эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Кон эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Итого эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Пролив</td>
+          <td align=center bgColor='#C9C7CF'><b>Нач мех</td>
+          <td align=center bgColor='#C9C7CF'><b>Кон мех</td>
+          <td align=center bgColor='#C9C7CF'><b>Итого мех</td>
+          <td align=center bgColor='#C9C7CF'><b>Погреш</b></td>
+        </tr>
+        {loop row}
+                <tr>
+                    <td>{row.shortName}</td>
+                </tr>
+            {end row}
+        </table>
+    </body>
+</html>

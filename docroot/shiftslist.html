@@ -11,7 +11,7 @@
 </head>
     <body>
         <h2 align = center>Выберите АЗС и нажмите кнопку Показать отчет</h2>
-        <form action=/report method=post name=radioform>
+        <form action=/report method=post name=shiftForm>
         <table class=tableobj align = center border = 1>
          <caption>Список смен</caption>
          <tr>
@@ -41,14 +41,14 @@
         </table>
         </form>
         <script>
-        document.querySelector('[name=radioform]').addEventListener('submit', function(e){
-            var pair = document.querySelectorAll('[name=objectID]'),
+        document.querySelector('[name=shiftForm]').addEventListener('submit', function(e){
+            var pair = document.querySelectorAll('[name=shiftID]'),
             sel = [].filter.call(pair, function(el){
                 return el.checked;
             });
-            if( (pair.length / 2) !== sel.length ) {
+            if( sel.length === 0 ) {
                 e.preventDefault();
-                alert('Не выбрана ни одна АЗС!');
+                alert('Не выбрана ни одна смена!');
             }
         });
         </script>

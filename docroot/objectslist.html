@@ -40,7 +40,7 @@
         </form>
         <script>
         document.querySelector('[name=radioform]').addEventListener('submit', function(e){
-            var pair = document.querySelectorAll('[name=objectID]'),
+            var pair = document.querySelectorAll('[name^=objectID]'),
             sel = [].filter.call(pair, function(el){
                 return el.checked;
             });

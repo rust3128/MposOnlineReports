@@ -30,7 +30,6 @@ ShiftsList::~ShiftsList()
 void ShiftsList::service(HttpRequest &request, HttpResponse &response)
 {
     HttpSession session=sessionStore->getSession(request,response,true);
-    userID = session.get("userID").toUInt();
     objectID = session.get("objectID").toUInt();
     qDebug() << "object ID" << objectID;
     openObjectDB();
@@ -40,7 +39,6 @@ void ShiftsList::service(HttpRequest &request, HttpResponse &response)
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     Template t=objectsList->getTemplate("shiftslist");
     t.setVariable("terminalID", termData.at(0));
-    qDebug() << termData;
     t.setVariable("name", termData.at(1));
     t.setVariable("address", termData.at(2));
 

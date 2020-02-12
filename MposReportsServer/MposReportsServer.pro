@@ -27,6 +27,7 @@ SOURCES += \
         main.cpp \
         objectslist.cpp \
         requestmapper.cpp \
+        shiftreports.cpp \
         shiftslist.cpp
 
 # Default rules for deployment.
@@ -37,6 +38,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     ../docroot/login.html \
     ../docroot/objectslist.html \
+    ../docroot/shiftreport.html \
     ../docroot/shiftslist.html \
     ../etc/MPosOnlineReports.ini
 
@@ -44,4 +46,5 @@ HEADERS += \
     global.h \
     objectslist.h \
     requestmapper.h \
+    shiftreports.h \
     shiftslist.h
