@@ -20,6 +20,7 @@ public:
     void service(HttpRequest &request, HttpResponse &response);
 private:
     void openObjectDB();
+    QString displayData(QVariant dat);
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
@@ -28,6 +29,7 @@ private:
     uint terminalID;
     QStringList termData;
     QSqlQueryModel *modelCounters;
+
 };
 
 #endif // SHIFTREPORTS_H

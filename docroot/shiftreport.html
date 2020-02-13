@@ -1,22 +1,17 @@
 
 <html>
 <head>
-    <style type='text/css'>
-    table.tableobj {
-        border: solid 1px #088A29;
-        border-collapse: collapse;
-     }
-     </style>
-
 </head>
     <body>
-    <table border='1' bordercolor='#a9a7af' cellspacing='0' cellpadding='0' border='false'>
+        <br><B>Счетчики - состояние:</B>
+        <TABLE cellSpacing=0 border=1>
         <tr>
           <td align=center bgColor='#C9C7CF'><b>НП</td>
           <td align=center bgColor='#C9C7CF'><b>№</td>
           <td align=center bgColor='#C9C7CF'><b>Нач эл</td>
           <td align=center bgColor='#C9C7CF'><b>Кон эл</td>
           <td align=center bgColor='#C9C7CF'><b>Итого эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Продажи</td>
           <td align=center bgColor='#C9C7CF'><b>Пролив</td>
           <td align=center bgColor='#C9C7CF'><b>Нач мех</td>
           <td align=center bgColor='#C9C7CF'><b>Кон мех</td>
@@ -25,9 +20,17 @@
         </tr>
         {loop row}
                 <tr>
-                    <td align=right>{row.shortName}</td>
-                    <td align=right>{row.num}</td>
-                    <td align=right>{row.beg_el}</td>
+                    <td align=right bgColor={row.bgColor}>{row.shortName}</td>
+                    <td align=right>{row.dispenser_id}</td>
+                    <td align=right>{row.e_from}</td>
+                    <td align=right>{row.e_to}</td>
+                    <td align=right>{row.e_add}</td>
+                    <td align=right>{row.sale}</td>
+                    <td align=right>{row.spilled}</td>
+                    <td align=right>{row.m_from}</td>
+                    <td align=right>{row.m_to}</td>
+                    <td align=right>{row.m_add}</td>
+                    <td align=right>{row.fail}</td>
                 </tr>
             {end row}
         </table>

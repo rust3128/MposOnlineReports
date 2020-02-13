@@ -1,6 +1,7 @@
 #include "shiftreports.h"
 #include "global.h"
 
+
 ShiftReports::ShiftReports(QObject *parent) :
     HttpRequestHandler(parent)
 {
@@ -48,9 +49,28 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     t.loop("row",rowCount);
     for(int i=0;i<rowCount;++i) {
         QString number = QString::number(i);
-        t.setVariable("row"+number+".shortName", modelCounters->data(modelCounters->index(i,2)).toString());
-        t.setVariable("row"+number+".num", modelCounters->data(modelCounters->index(i,4)).toString());
-        t.setVariable("row"+number+".beg_el",QString::number(modelCounters->data(modelCounters->index(i,5)).toDouble(),'f',2) );
+        t.setVariable("row"+number+".shortName", modelCounters->data(modelCounters->index(i,0)).toString());
+        uint intCol = modelCounters->data(modelCounters->index(i,2)).toUInt();
+        QString color = QString("%1").arg(intCol, 6, 16, QLatin1Char('0'));
+        QString c2 = color;
+        c2[0]=color[4];
+        c2[1]=color[5];
+        c2[4]=color[0];
+        c2[5]=color[1];
+
+        qDebug()<< "Fuel Color" << color;
+        t.setVariable("row"+number+".bgColor",c2);
+        t.setVariable("row"+number+".dispenser_id", modelCounters->data(modelCounters->index(i,3)).toString());
+        t.setVariable("row"+number+".e_from",QString::number(modelCounters->data(modelCounters->index(i,4)).toDouble(),'f',2) );
+        t.setVariable("row"+number+".e_to",displayData(modelCounters->data(modelCounters->index(i,5))));
+        t.setVariable("row"+number+".e_add", displayData(modelCounters->data(modelCounters->index(i,6))));
+        t.setVariable("row"+number+".sale", displayData(modelCounters->data(modelCounters->index(i,7))));
+        t.setVariable("row"+number+".spilled", displayData(modelCounters->data(modelCounters->index(i,8))));
+        t.setVariable("row"+number+".m_from",QString::number(modelCounters->data(modelCounters->index(i,9)).toDouble(),'f',2) );
+        t.setVariable("row"+number+".m_to",QString::number(modelCounters->data(modelCounters->index(i,10)).toDouble(),'f',2) );
+        t.setVariable("row"+number+".m_add",displayData(modelCounters->data(modelCounters->index(i,11))));
+        t.setVariable("row"+number+".fail",displayData(modelCounters->data(modelCounters->index(i,12))));
+
 
     }
 
@@ -88,14 +108,29 @@ void ShiftReports::openObjectDB()
     termData.append(q->value(6).toString());
     q->finish();
     modelCounters = new QSqlQueryModel();
-    QString strSQL = QString("SELECT c.TERMINAL_ID, c.SHIFT_ID, F.SHORTNAME, TANKS.COLOR, c.DISPENSER_ID, c.E_FROM, c.E_TO, "
-                              "(c.E_TO - c.E_FROM) AS E_ADD, c.SPILLED, c.M_FROM, c.M_TO, (c.M_TO - c.M_FROM) "
-                              "AS M_ADD, (c.M_TO - c.M_FROM - c.E_TO + c.E_FROM) AS FAIL "
-                              "FROM COUNTERS c LEFT JOIN TANKS LEFT JOIN FUELS F ON F.FUEL_ID = c.FUEL_ID "
-                              "ON TANKS.TANK_ID = c.TANK_ID "
-                              "WHERE c.TERMINAL_ID = %1 AND c.SHIFT_ID = %2 "
-                              "ORDER BY c.TERMINAL_ID, c.SHIFT_ID, F.fuel_id, c.DISPENSER_ID")
+    QString strSQL = QString("SELECT F.SHORTNAME, F.CODENAME, T.COLOR, C.DISPENSER_ID, C.E_FROM, C.E_TO, (C.E_TO - C.E_FROM) AS E_ADD, "
+                             "(SELECT SUM(F_ROUNDTO(S.GIVE, 2)) FROM SALEORDERS S "
+                             "WHERE S.TERMINAL_ID = C.TERMINAL_ID AND S.SHIFT_ID = C.SHIFT_ID AND S.DISPENSER_ID = C.DISPENSER_ID AND S.TRK_ID = C.TRK_ID) AS SALE, "
+                             "C.SPILLED, C.M_FROM, C.M_TO, (C.M_TO - C.M_FROM) AS M_ADD, (C.M_TO - C.M_FROM - C.E_TO + C.E_FROM) AS FAIL "
+                             "FROM COUNTERS C "
+                             "JOIN TANKS T ON T.TERMINAL_ID = C.TERMINAL_ID AND T.TANK_ID = C.TANK_ID "
+                             "LEFT JOIN FUELS F ON F.FUEL_ID = C.FUEL_ID "
+                             "WHERE C.TERMINAL_ID = %1 AND C.SHIFT_ID = %2 "
+                             "ORDER BY F.CODENAME, T.COLOR, C.DISPENSER_ID")
             .arg(terminalID)
             .arg(shiftID);
     modelCounters->setQuery(strSQL,dbObj);
+}
+
+QString ShiftReports::displayData(QVariant dat)
+{
+    QString strReturn;
+    if(dat.toInt() == 0){
+        strReturn = "";
+    } else if(dat.toDouble() > 0){
+        strReturn = QString::number(dat.toDouble(),'f',2);
+    } else if(dat.toDouble() < 0){
+        strReturn = "<FONT COLOR=#FF0000>"+QString::number(dat.toDouble(),'f',2);
+    }
+    return strReturn;
 }
