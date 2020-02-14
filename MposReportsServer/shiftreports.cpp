@@ -45,21 +45,12 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     t.setVariable("address", termData.at(2));
 
     //Таблица счетчики
-    const int rowCount = modelCounters->rowCount();
+    int rowCount = modelCounters->rowCount();
     t.loop("row",rowCount);
     for(int i=0;i<rowCount;++i) {
         QString number = QString::number(i);
         t.setVariable("row"+number+".shortName", modelCounters->data(modelCounters->index(i,0)).toString());
-        uint intCol = modelCounters->data(modelCounters->index(i,2)).toUInt();
-        QString color = QString("%1").arg(intCol, 6, 16, QLatin1Char('0'));
-        QString c2 = color;
-        c2[0]=color[4];
-        c2[1]=color[5];
-        c2[4]=color[0];
-        c2[5]=color[1];
-
-        qDebug()<< "Fuel Color" << color;
-        t.setVariable("row"+number+".bgColor",c2);
+        t.setVariable("row"+number+".bgColor",intToColor(modelCounters->data(modelCounters->index(i,2)).toUInt()));
         t.setVariable("row"+number+".dispenser_id", modelCounters->data(modelCounters->index(i,3)).toString());
         t.setVariable("row"+number+".e_from",QString::number(modelCounters->data(modelCounters->index(i,4)).toDouble(),'f',2) );
         t.setVariable("row"+number+".e_to",displayData(modelCounters->data(modelCounters->index(i,5))));
@@ -73,6 +64,24 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
 
 
     }
+    //Отпуск по счетчикам
+    const int rowCountAP = modelActivPaytypes->rowCount();
+    t.loop("col", rowCountAP);
+    for(int i=0;i<rowCountAP;++i) {
+        QString number = QString::number(i);
+        t.setVariable("col"+number+".colNamePaytype", modelActivPaytypes->data(modelActivPaytypes->index(i,1)).toString());
+    }
+    const int rowContSF = modelSalesFuels->rowCount();
+    t.loop("rowsf", rowContSF);
+    for(int i=0;i<rowContSF;++i){
+        QString number = QString::number(i);
+        t.setVariable("rowsf"+number+".shortName", modelSalesFuels->data(modelSalesFuels->index(i,0)).toString());
+        t.setVariable("rowsf"+number+".bgColor",intToColor(modelSalesFuels->data(modelSalesFuels->index(i,2)).toUInt()));
+        t.setVariable("rowsf"+number+".e_sum", displayData(modelSalesFuels->data(modelSalesFuels->index(i,3))));
+        t.setVariable("rowsf"+number+".spill", displayData(modelSalesFuels->data(modelSalesFuels->index(i,4))));
+
+    }
+
 
 
     response.write(t.toUtf8(),true);
@@ -120,6 +129,39 @@ void ShiftReports::openObjectDB()
             .arg(terminalID)
             .arg(shiftID);
     modelCounters->setQuery(strSQL,dbObj);
+
+
+    modelActivPaytypes = new QSqlQueryModel();
+    strSQL = QString("SELECT DISTINCT S.PAYTYPE_ID, P.SHORTNAME FROM GET_FSALES( %1, %2, %2, -1, -1, -1, -1, -1, -1 ) S "
+                     "LEFT JOIN PAYTYPES P ON P.PAYTYPE_ID = S.PAYTYPE_ID "
+                     "ORDER BY S.TERMINAL_ID, S.SHIFT_ID, S.PAYTYPE_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelActivPaytypes->setQuery(strSQL,dbObj);
+
+    modelSalesFuels = new QSqlQueryModel();
+    strSQL = QString("SELECT F.SHORTNAME, F.FUEL_ID, T.COLOR, SUM(C.E_TO - C.E_FROM) AS E_SUM, SUM(C.SPILLED) AS SPILL, F.CODENAME "
+                     "FROM COUNTERS C "
+                     "LEFT JOIN TANKS T ON T.TANK_ID = C.TANK_ID AND T.TERMINAL_ID=C.TERMINAL_ID "
+                     "LEFT JOIN FUELS F ON F.FUEL_ID = C.FUEL_ID "
+                     "WHERE C.TERMINAL_ID = %1 AND C.SHIFT_ID = %2 "
+                     "GROUP BY F.FUEL_ID, F.SHORTNAME, T.COLOR, F.CODENAME "
+                     "ORDER BY F.CODENAME, T.COLOR, F.FUEL_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelSalesFuels->setQuery(strSQL,dbObj);
+
+    modelSalFID = new QSqlQueryModel();
+    strSQL = QString("SELECT S.FUEL_ID, S.PAYTYPE_ID, SUM( S.GIVE ) AS SUMM "
+                     "FROM GET_FSALES( 3037, 2017, 2017, -1, -1, -1, -1, -1, -1 ) S "
+                     "LEFT JOIN TANKS T ON T.TANK_ID = S.TANK_ID AND T.TERMINAL_ID = S.TERMINAL_ID "
+                     "GROUP BY S.FUEL_ID, S.PAYTYPE_ID, T.COLOR "
+                     "ORDER BY S.FUEL_ID, S.PAYTYPE_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelSalFID->setQuery(strSQL,dbObj);
+
+
 }
 
 QString ShiftReports::displayData(QVariant dat)
@@ -133,4 +175,15 @@ QString ShiftReports::displayData(QVariant dat)
         strReturn = "<FONT COLOR=#FF0000>"+QString::number(dat.toDouble(),'f',2);
     }
     return strReturn;
+}
+
+QString ShiftReports::intToColor(uint col)
+{
+    QString color = QString("%1").arg(col, 6, 16, QLatin1Char('0'));
+    QString c2 = color;
+    c2[0]=color[4];
+    c2[1]=color[5];
+    c2[4]=color[0];
+    c2[5]=color[1];
+    return c2;
 }

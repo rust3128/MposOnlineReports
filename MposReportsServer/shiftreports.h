@@ -21,6 +21,7 @@ public:
 private:
     void openObjectDB();
     QString displayData(QVariant dat);
+    QString intToColor(uint col);
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
@@ -29,6 +30,9 @@ private:
     uint terminalID;
     QStringList termData;
     QSqlQueryModel *modelCounters;
+    QSqlQueryModel *modelActivPaytypes;
+    QSqlQueryModel *modelSalesFuels;
+    QSqlQueryModel *modelSalFID;
 
 };
 

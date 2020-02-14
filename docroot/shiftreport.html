@@ -8,19 +8,19 @@
         <tr>
           <td align=center bgColor='#C9C7CF'><b>НП</td>
           <td align=center bgColor='#C9C7CF'><b>№</td>
-          <td align=center bgColor='#C9C7CF'><b>Нач эл</td>
-          <td align=center bgColor='#C9C7CF'><b>Кон эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Нач. эл</td>
+          <td align=center bgColor='#C9C7CF'><b>Кон. эл</td>
           <td align=center bgColor='#C9C7CF'><b>Итого эл</td>
           <td align=center bgColor='#C9C7CF'><b>Продажи</td>
           <td align=center bgColor='#C9C7CF'><b>Пролив</td>
-          <td align=center bgColor='#C9C7CF'><b>Нач мех</td>
-          <td align=center bgColor='#C9C7CF'><b>Кон мех</td>
+          <td align=center bgColor='#C9C7CF'><b>Нач. мех</td>
+          <td align=center bgColor='#C9C7CF'><b>Кон. мех</td>
           <td align=center bgColor='#C9C7CF'><b>Итого мех</td>
           <td align=center bgColor='#C9C7CF'><b>Погреш</b></td>
         </tr>
         {loop row}
                 <tr>
-                    <td align=right bgColor={row.bgColor}>{row.shortName}</td>
+                    <td align=right bgColor={row.bgColor}><b>{row.shortName}</b></td>
                     <td align=right>{row.dispenser_id}</td>
                     <td align=right>{row.e_from}</td>
                     <td align=right>{row.e_to}</td>
@@ -33,6 +33,26 @@
                     <td align=right>{row.fail}</td>
                 </tr>
             {end row}
+        </table>
+        <br><B>Счетчики - отпуск:</B>
+        <TABLE cellSpacing=0 border=1>
+        <tr>
+            <td align=center bgColor='#C9C7CF'><b>НП</td>
+            <td align=center bgColor='#C9C7CF'><b>По счетч</td>
+            <td align=center bgColor='#C9C7CF'><b>Ав пролив</td>
+            {loop col}
+                <td align=center bgColor='#C9C7CF'><b>{col.colNamePaytype}</td>
+            {end col}
+            <td align=center bgColor='#C9C7CF'><b>Погреш</td>
+        </tr>
+        {loop rowsf}
+        <tr>
+            <td align=right bgColor={rowsf.bgColor}><b>{rowsf.shortName}</b></td>
+            <td align=right>{rowsf.e_sum}</td>
+            <td align=right>{rowsf.spill}</td>
+        </tr>
+        {end rowsf}
+
         </table>
     </body>
 </html>
