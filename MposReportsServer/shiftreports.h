@@ -33,6 +33,9 @@ private:
     QSqlQueryModel *modelActivPaytypes;
     QSqlQueryModel *modelSalesFuels;
     QSqlQueryModel *modelSalFID;
+    QSqlQueryModel *modelIncoming;
+    QStringList counterSales;
+
 
 };
 

@@ -86,7 +86,7 @@ void ShiftsList::openObjectDB()
    termData.append(q->value(6).toString());
    q->finish();
    modelShifts = new QSqlQueryModel();
-   modelShifts->setQuery("SELECT first 30 s.shift_id, s.znumber, s.datopen, s.datclose, TRIM(o.fio) from shifts s "
+   modelShifts->setQuery("SELECT first 10 s.shift_id, s.znumber, s.datopen, s.datclose, TRIM(o.fio) from shifts s "
                          "INNER JOIN operators o ON o.operator_id=s.operator_id "
                          "order by s.shift_id DESC",dbObj);
 

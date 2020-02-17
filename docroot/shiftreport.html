@@ -36,23 +36,15 @@
         </table>
         <br><B>Счетчики - отпуск:</B>
         <TABLE cellSpacing=0 border=1>
-        <tr>
-            <td align=center bgColor='#C9C7CF'><b>НП</td>
-            <td align=center bgColor='#C9C7CF'><b>По счетч</td>
-            <td align=center bgColor='#C9C7CF'><b>Ав пролив</td>
-            {loop col}
-                <td align=center bgColor='#C9C7CF'><b>{col.colNamePaytype}</td>
-            {end col}
-            <td align=center bgColor='#C9C7CF'><b>Погреш</td>
-        </tr>
         {loop rowsf}
         <tr>
-            <td align=right bgColor={rowsf.bgColor}><b>{rowsf.shortName}</b></td>
-            <td align=right>{rowsf.e_sum}</td>
-            <td align=right>{rowsf.spill}</td>
+            {rowsf.salCount}
         </tr>
         {end rowsf}
-
         </table>
+        {if incomingYes}
+            <br><B>Приходы топлива</B>
+        {else incomingYes}
+        {end incomingYes}
     </body>
 </html>

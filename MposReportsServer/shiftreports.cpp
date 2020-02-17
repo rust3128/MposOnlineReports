@@ -65,24 +65,20 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
 
     }
     //Отпуск по счетчикам
-    const int rowCountAP = modelActivPaytypes->rowCount();
-    t.loop("col", rowCountAP);
-    for(int i=0;i<rowCountAP;++i) {
+    const int countRow = counterSales.size();
+    t.loop("rowsf", countRow);
+    for(int i=0;i<countRow;++i){
         QString number = QString::number(i);
-        t.setVariable("col"+number+".colNamePaytype", modelActivPaytypes->data(modelActivPaytypes->index(i,1)).toString());
-    }
-    const int rowContSF = modelSalesFuels->rowCount();
-    t.loop("rowsf", rowContSF);
-    for(int i=0;i<rowContSF;++i){
-        QString number = QString::number(i);
-        t.setVariable("rowsf"+number+".shortName", modelSalesFuels->data(modelSalesFuels->index(i,0)).toString());
-        t.setVariable("rowsf"+number+".bgColor",intToColor(modelSalesFuels->data(modelSalesFuels->index(i,2)).toUInt()));
-        t.setVariable("rowsf"+number+".e_sum", displayData(modelSalesFuels->data(modelSalesFuels->index(i,3))));
-        t.setVariable("rowsf"+number+".spill", displayData(modelSalesFuels->data(modelSalesFuels->index(i,4))));
-
+        t.setVariable("rowsf"+number+".salCount", counterSales.at(i));
     }
 
+    //Приходы топлива
+    const int countIncoming = modelIncoming->rowCount();
+    bool incomingYes = countIncoming>0;
+    t.setCondition("incomingYes",incomingYes);
+    if(incomingYes){
 
+    }
 
     response.write(t.toUtf8(),true);
 }
@@ -160,7 +156,72 @@ void ShiftReports::openObjectDB()
             .arg(terminalID)
             .arg(shiftID);
     modelSalFID->setQuery(strSQL,dbObj);
+    counterSales.clear();
+    QString tempStr = "<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>По счетч</td><td align=center bgColor='#C9C7CF'><b>Ав пролив</td>";
+    const int rowCountAP = modelActivPaytypes->rowCount();
+    for(int i=0;i<rowCountAP;++i) {
+        tempStr += "<td align=center bgColor='#C9C7CF'><b>"+modelActivPaytypes->data(modelActivPaytypes->index(i,1)).toString()+"</td>";
+    }
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>Погреш</td>";
+    counterSales.append(tempStr);
+    tempStr.clear();
+    const int rowContSF = modelSalesFuels->rowCount();
+    const int rowCountPt = modelActivPaytypes->rowCount();
+    const int rowCountFID = modelSalFID->rowCount();
+    uint fuelid;
+    uint paytypeId;
+    QList<double> summCount;
+    for(int i=0;i<3+rowCountPt;++i){
+        summCount.push_back(0);
+    }
+    for(int i=0;i<rowContSF;++i){
+        tempStr = QString("<td align=right bgColor=%1><b>%2</b></td>")
+                .arg(intToColor(modelSalesFuels->data(modelSalesFuels->index(i,2)).toUInt()))
+                .arg(modelSalesFuels->data(modelSalesFuels->index(i,0)).toString());
+        tempStr += "<td align=right>"+displayData(modelSalesFuels->data(modelSalesFuels->index(i,3)))+"</td>";
+        summCount[0] += modelSalesFuels->data(modelSalesFuels->index(i,3)).toDouble();
+        tempStr += "<td align=right>"+displayData(modelSalesFuels->data(modelSalesFuels->index(i,4)))+"</td>";
+        summCount[1] += modelSalesFuels->data(modelSalesFuels->index(i,4)).toDouble();
+        fuelid = modelSalesFuels->data(modelSalesFuels->index(i,1)).toUInt();
+        for(int p=0;p<rowCountPt;++p){
+            paytypeId = modelActivPaytypes->data(modelActivPaytypes->index(p,0)).toUInt();
+            QString sale = "<td align=right>"+displayData(0)+"</td>";
+            for(int j=0;j<rowCountFID;j++){
+                if((modelSalFID->data(modelSalFID->index(j,0)).toUInt() == fuelid) &&  (modelSalFID->data(modelSalFID->index(j,1)).toUInt() == paytypeId) ){
+                    sale = "<td align=right>"+displayData(modelSalFID->data(modelSalFID->index(j,2)))+"</td>";
+                    summCount[p+2] += modelSalFID->data(modelSalFID->index(j,2)).toDouble();
+                    break;
+                }
+            }
+            tempStr += sale;
 
+        }
+        tempStr += "<td align=right>"+displayData(modelSalesFuels->data(modelSalesFuels->index(i,4)))+"</td>";
+        summCount[summCount.size()-1] += modelSalesFuels->data(modelSalesFuels->index(i,4)).toDouble();
+        counterSales.append(tempStr);
+    }
+    tempStr = "<td align =right><b>Итого</b></td>";
+    for(int i = 0; i<summCount.size();++i){
+        tempStr += "<td align=right><b>"+displayData(summCount.at(i))+"</b></td>";
+    }
+    counterSales.append(tempStr);
+
+    //Приходы топлива
+    modelIncoming = new QSqlQueryModel();
+    strSQL=QString("SELECT F.SHORTNAME, F.CODENAME, T.TANK_ID, T.COLOR, I.DOCAMOUNT, I.DOCTEMPERATURE, I.DOCDENSITY, "
+                   "G1.FUELHEIGHT AS FUELHEIGHT_FROM, G1.FUELAMOUNT AS FUELAMOUNT_FROM, G1.TEMPERATURE AS TEMPERATURE_FROM, "
+                   "G1.DENSITY AS DENSITY_FROM, G2.FUELHEIGHT AS FUELHEIGHT_TO, G2.FUELAMOUNT AS FUELAMOUNT_TO, "
+                   "G2.TEMPERATURE AS TEMPERATURE_TO, G2.DENSITY AS DENSITY_TO, I.REALAMOUNT, I.REALDENSITY, "
+                   "I.REALTEMPERATURE, I.GIVE AS GIVE, (I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 ) - G2.FUELAMOUNT + G1.FUELAMOUNT) AS FAILLITERS, "
+                   "((I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 )) * I.DOCDENSITY - G2.FUELAMOUNT * G2.DENSITY + G1.FUELAMOUNT * G1.DENSITY) AS FAILKILOGRAMS "
+                   "FROM INCOMINGTANKS I LEFT JOIN TANKS T ON T.TERMINAL_ID = I.TERMINAL_ID AND T.TANK_ID = I.TANK_ID "
+                   "LEFT JOIN FUELS F ON F.FUEL_ID = I.FUEL_ID "
+                   "LEFT JOIN GAUGINGS G1 ON G1.TERMINAL_ID = I.TERMINAL_ID AND G1.GAUGING_ID = I.GAUGINGFROM_ID "
+                   "LEFT JOIN GAUGINGS G2 ON G2.TERMINAL_ID = I.TERMINAL_ID AND G2.GAUGING_ID = I.GAUGINGTO_ID "
+                   "WHERE I.TERMINAL_ID = %1 AND I.SHIFT_ID = %2 ORDER BY TERMINAL_ID, CODENAME, TANK_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelIncoming->setQuery(strSQL,dbObj);
 
 }
 
@@ -168,7 +229,7 @@ QString ShiftReports::displayData(QVariant dat)
 {
     QString strReturn;
     if(dat.toInt() == 0){
-        strReturn = "";
+        strReturn = " ";
     } else if(dat.toDouble() > 0){
         strReturn = QString::number(dat.toDouble(),'f',2);
     } else if(dat.toDouble() < 0){
