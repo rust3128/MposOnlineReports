@@ -73,7 +73,8 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     }
 
     //Приходы топлива
-    const int countIncoming = modelIncoming->rowCount();
+    int countIncoming = modelIncoming->rowCount();
+    qDebug() << "COUNT Incoming" << modelIncoming->rowCount();
     bool incomingYes = countIncoming>0;
     t.setCondition("incomingYes",incomingYes);
     if(incomingYes){
@@ -149,7 +150,7 @@ void ShiftReports::openObjectDB()
 
     modelSalFID = new QSqlQueryModel();
     strSQL = QString("SELECT S.FUEL_ID, S.PAYTYPE_ID, SUM( S.GIVE ) AS SUMM "
-                     "FROM GET_FSALES( 3037, 2017, 2017, -1, -1, -1, -1, -1, -1 ) S "
+                     "FROM GET_FSALES( %1, %2, %2, -1, -1, -1, -1, -1, -1 ) S "
                      "LEFT JOIN TANKS T ON T.TANK_ID = S.TANK_ID AND T.TERMINAL_ID = S.TERMINAL_ID "
                      "GROUP BY S.FUEL_ID, S.PAYTYPE_ID, T.COLOR "
                      "ORDER BY S.FUEL_ID, S.PAYTYPE_ID")
@@ -218,11 +219,11 @@ void ShiftReports::openObjectDB()
                    "LEFT JOIN FUELS F ON F.FUEL_ID = I.FUEL_ID "
                    "LEFT JOIN GAUGINGS G1 ON G1.TERMINAL_ID = I.TERMINAL_ID AND G1.GAUGING_ID = I.GAUGINGFROM_ID "
                    "LEFT JOIN GAUGINGS G2 ON G2.TERMINAL_ID = I.TERMINAL_ID AND G2.GAUGING_ID = I.GAUGINGTO_ID "
-                   "WHERE I.TERMINAL_ID = %1 AND I.SHIFT_ID = %2 ORDER BY TERMINAL_ID, CODENAME, TANK_ID")
+                   "WHERE I.TERMINAL_ID = %1 AND I.SHIFT_ID = %2 "
+                   "ORDER BY F.codename, T.tank_id")
             .arg(terminalID)
             .arg(shiftID);
     modelIncoming->setQuery(strSQL,dbObj);
-
 }
 
 QString ShiftReports::displayData(QVariant dat)
