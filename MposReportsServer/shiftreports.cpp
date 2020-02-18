@@ -74,11 +74,15 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
 
     //Приходы топлива
     int countIncoming = modelIncoming->rowCount();
-    qDebug() << "COUNT Incoming" << modelIncoming->rowCount();
     bool incomingYes = countIncoming>0;
     t.setCondition("incomingYes",incomingYes);
     if(incomingYes){
-
+        const int incRow = tdRows.size();
+        t.loop("incom",incRow);
+        for(int i=0;i<incRow;++i){
+            QString number = QString::number(i);
+            t.setVariable("incom"+number+".incomData",tdRows.at(i));
+        }
     }
 
     response.write(t.toUtf8(),true);
@@ -212,18 +216,56 @@ void ShiftReports::openObjectDB()
     strSQL=QString("SELECT F.SHORTNAME, F.CODENAME, T.TANK_ID, T.COLOR, I.DOCAMOUNT, I.DOCTEMPERATURE, I.DOCDENSITY, "
                    "G1.FUELHEIGHT AS FUELHEIGHT_FROM, G1.FUELAMOUNT AS FUELAMOUNT_FROM, G1.TEMPERATURE AS TEMPERATURE_FROM, "
                    "G1.DENSITY AS DENSITY_FROM, G2.FUELHEIGHT AS FUELHEIGHT_TO, G2.FUELAMOUNT AS FUELAMOUNT_TO, "
-                   "G2.TEMPERATURE AS TEMPERATURE_TO, G2.DENSITY AS DENSITY_TO, I.REALAMOUNT, I.REALDENSITY, "
-                   "I.REALTEMPERATURE, I.GIVE AS GIVE, (I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 ) - G2.FUELAMOUNT + G1.FUELAMOUNT) AS FAILLITERS, "
-                   "((I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 )) * I.DOCDENSITY - G2.FUELAMOUNT * G2.DENSITY + G1.FUELAMOUNT * G1.DENSITY) AS FAILKILOGRAMS "
+                   "G2.TEMPERATURE AS TEMPERATURE_TO, G2.DENSITY AS DENSITY_TO, I.REALAMOUNT,  I.REALTEMPERATURE, "
+                   "I.REALDENSITY, (I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 ) - G2.FUELAMOUNT + G1.FUELAMOUNT) AS FAILLITERS, "
+                   "((I.DOCAMOUNT - F_ROUNDTO( I.GIVE, 2 )) * I.DOCDENSITY - G2.FUELAMOUNT * G2.DENSITY + G1.FUELAMOUNT * G1.DENSITY) AS FAILKILOGRAMS, I.GIVE AS GIVE "
                    "FROM INCOMINGTANKS I LEFT JOIN TANKS T ON T.TERMINAL_ID = I.TERMINAL_ID AND T.TANK_ID = I.TANK_ID "
                    "LEFT JOIN FUELS F ON F.FUEL_ID = I.FUEL_ID "
                    "LEFT JOIN GAUGINGS G1 ON G1.TERMINAL_ID = I.TERMINAL_ID AND G1.GAUGING_ID = I.GAUGINGFROM_ID "
                    "LEFT JOIN GAUGINGS G2 ON G2.TERMINAL_ID = I.TERMINAL_ID AND G2.GAUGING_ID = I.GAUGINGTO_ID "
-                   "WHERE I.TERMINAL_ID = %1 AND I.SHIFT_ID = %2 "
-                   "ORDER BY F.codename, T.tank_id")
+                   "WHERE I.TERMINAL_ID = %1 AND I.SHIFT_ID = %2 and i.docamount >0 "
+                   "ORDER BY t.terminal_id, F.codename, T.tank_id")
             .arg(terminalID)
             .arg(shiftID);
     modelIncoming->setQuery(strSQL,dbObj);
+    tdRows.clear();
+    tdRows.append("<td colspan=2></td><td align=center colspan=3><b>По накладной</b></td><td align=center colspan=4><b>Замер до</b></td><td align=center colspan=4><b>Замер после</b></td>"
+                  "<td align=center colspan=3><b>Фактически</b></td><td align=center colspan=2><b>Потери</b></td><td align=center><b>Отпуск</b></td>");
+    tempStr = "<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>№</td>";
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
+    tempStr += "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Кг</td><td align=center bgColor='#C9C7CF'><b>л</td>";
+    tdRows.append(tempStr);
+    for(int i=0;i<modelIncoming->rowCount();++i){
+        tempStr.clear();
+        tempStr = QString("<td align=right bgColor=%1><b>%2</b></td> <td align=right>%3</td>")
+                .arg(intToColor(modelIncoming->data(modelIncoming->index(i,3)).toUInt()))
+                .arg(modelIncoming->data(modelIncoming->index(i,0)).toString())
+                .arg(modelIncoming->data(modelIncoming->index(i,2)).toString());
+        for(int j=4; j<modelIncoming->columnCount()-3;++j){
+            tempStr += QString("<td align=right>%1</td>").arg(modelIncoming->data(modelIncoming->index(i,j)).toString());
+        }
+        tempStr += QString("<td align=right>%1</td>").arg(displayData(modelIncoming->data(modelIncoming->index(i,18))));
+        if(modelIncoming->data(modelIncoming->index(i,10)).toInt() == 0){
+            tempStr += QString("<td align=right></td>");
+        } else {
+            tempStr += QString("<td align=right>%1</td>").arg(displayData(modelIncoming->data(modelIncoming->index(i,19))));
+        }
+        tempStr += QString("<td align=right>%1</td>").arg(displayData(modelIncoming->data(modelIncoming->index(i,20))));
+        tdRows.append(tempStr);
+    }
+    tempStr = QString("<td align =right><b>Итого</b></td><td></td><td align =right><b>%1</b></td>")
+            .arg(displayData(columnModelSum(modelIncoming,4)));
+    for(int i=0;i<10;++i)
+        tempStr += "<td></td>";
+    tempStr += QString("<td align =right><b>%1</b></td>").arg(displayData(columnModelSum(modelIncoming,15)));
+    tempStr += "<td></td><td></td><td></td>";
+    tempStr += QString("<td align =right><b>%1</b></td>").arg(displayData(0));
+    tempStr += QString("<td align =right><b>%1</b></td>").arg(displayData(columnModelSum(modelIncoming,20)));
+    tdRows.append(tempStr);
+
 }
 
 QString ShiftReports::displayData(QVariant dat)
@@ -248,4 +290,14 @@ QString ShiftReports::intToColor(uint col)
     c2[4]=color[0];
     c2[5]=color[1];
     return c2;
+}
+
+QVariant ShiftReports::columnModelSum(QSqlQueryModel *mod, int column)
+{
+    const int rowCount = mod->rowCount();
+    double sum =0.0;
+    for(int i =0;i<rowCount;++i){
+        sum += mod->data(mod->index(i,column)).toDouble();
+    }
+    return sum;
 }

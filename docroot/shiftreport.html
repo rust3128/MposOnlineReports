@@ -1,9 +1,17 @@
-
 <html>
 <head>
+<style>
+table {
+font-family: Verdana, Arial, Helvetica, sans-serif;
+font-size: 10pt; /* Размер шрифта в пунктах */
+}
+
+</style>
+
+
 </head>
     <body>
-        <br><B>Счетчики - состояние:</B>
+    <br><B>Счетчики - состояние:</B>
         <TABLE cellSpacing=0 border=1>
         <tr>
           <td align=center bgColor='#C9C7CF'><b>НП</td>
@@ -44,7 +52,13 @@
         </table>
         {if incomingYes}
             <br><B>Приходы топлива</B>
-        {else incomingYes}
+            <TABLE cellSpacing=0 border=1>
+            {loop incom}
+                <tr>
+                    {incom.incomData}
+                </tr>
+            {end incom}
+            </table>
         {end incomingYes}
     </body>
 </html>

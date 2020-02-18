@@ -22,6 +22,7 @@ private:
     void openObjectDB();
     QString displayData(QVariant dat);
     QString intToColor(uint col);
+    QVariant columnModelSum(QSqlQueryModel *mod, int column);
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
@@ -35,6 +36,7 @@ private:
     QSqlQueryModel *modelSalFID;
     QSqlQueryModel *modelIncoming;
     QStringList counterSales;
+    QStringList tdRows;
 
 
 };
