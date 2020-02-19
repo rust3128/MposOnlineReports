@@ -85,6 +85,23 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
         }
     }
 
+    //Емкости книжка
+    const int bookRow = tanksBookData.size();
+    t.loop("tanksbook", bookRow);
+    for(int i=0;i<bookRow;++i){
+        QString number = QString::number(i);
+        t.setVariable("tanksbook"+number+".bookData", tanksBookData.at(i));
+    }
+
+
+    //Емкости факт
+    const int facktRow = tanksFacktData.size();
+    t.loop("tanksfackt", facktRow);
+    for(int i=0;i<facktRow;++i){
+        QString number = QString::number(i);
+        t.setVariable("tanksfackt"+number+".facktdata", tanksFacktData.at(i));
+    }
+
     response.write(t.toUtf8(),true);
 }
 
@@ -229,8 +246,8 @@ void ShiftReports::openObjectDB()
             .arg(shiftID);
     modelIncoming->setQuery(strSQL,dbObj);
     tdRows.clear();
-    tdRows.append("<td colspan=2></td><td align=center colspan=3><b>По накладной</b></td><td align=center colspan=4><b>Замер до</b></td><td align=center colspan=4><b>Замер после</b></td>"
-                  "<td align=center colspan=3><b>Фактически</b></td><td align=center colspan=2><b>Потери</b></td><td align=center><b>Отпуск</b></td>");
+    tdRows.append("<td colspan=2></td><td align=center bgColor='#C9C7CF' colspan=3><b>По накладной</b></td><td align=center bgColor='#C9C7CF' colspan=4><b>Замер до</b></td><td align=center bgColor='#C9C7CF' colspan=4><b>Замер после</b></td>"
+                  "<td align=center  bgColor='#C9C7CF' colspan=3><b>Фактически</b></td><td align=center  bgColor='#C9C7CF' colspan=2><b>Потери</b></td><td  bgColor='#C9C7CF' align=center><b>Отпуск</b></td>");
     tempStr = "<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>№</td>";
     tempStr += "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
     tempStr += "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>Темп</td><td align=center bgColor='#C9C7CF'><b>Плот</td>";
@@ -265,6 +282,110 @@ void ShiftReports::openObjectDB()
     tempStr += QString("<td align =right><b>%1</b></td>").arg(displayData(0));
     tempStr += QString("<td align =right><b>%1</b></td>").arg(displayData(columnModelSum(modelIncoming,20)));
     tdRows.append(tempStr);
+
+    //Емкости Книга
+    modelTanksBook = new QSqlQueryModel();
+    strSQL = QString("SELECT F.SHORTNAME, T.TANK_ID, T.COLOR, TS.PRICE, F_ROUNDTO(TS.BOOKFROM, 2) AS BOOKFROM, TS.BOOKADD, TS.BOOKSUB, "
+                     "F_ROUNDTO(TS.BOOKTO, 2) AS BOOKTO, TS.WEIGHT_FROM, "
+                     "( TS.WEIGHT_ADD + TS.WEIGHT_ADDSUB ) AS WEIGHT_ADD, "
+                     "( TS.WEIGHT_SUB + TS.WEIGHT_ADDSUB ) AS WEIGHT_SUB, "
+                     "TS.WEIGHT_TO, F.CODENAME, TS.DOCS_CORR, "
+                     "ROUND( COALESCE( TS.DOCS_CORR * G.DENSITY, 0 ), 2 ) AS WEIGHT_DOCS_CORR "
+                   "FROM V_TANKSALDOS_EX TS "
+                        "LEFT JOIN TANKS T ON T.TERMINAL_ID = TS.TERMINAL_ID AND T.TANK_ID = TS.TANK_ID "
+                        "LEFT JOIN FUELS F ON F.FUEL_ID = TS.FUEL_ID "
+                        "LEFT JOIN GAUGINGS G ON G.TERMINAL_ID = TS.TERMINAL_ID AND G.GAUGING_ID = TS.GAUGINGTO_ID "
+                   "WHERE TS.TERMINAL_ID = %1 AND TS.SHIFT_ID = %2 "
+                   "ORDER BY F.CODENAME, T.COLOR, T.TANK_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+
+    modelTanksBook->setQuery(strSQL, dbObj);
+    tanksBookData.clear();
+    tanksBookData.append("<td bgColor='#C9C7CF' colspan=2></td><td align=center bgColor='#C9C7CF'><b>Цена</b></td><td align=center bgColor='#C9C7CF' colspan=3><b>Начало</b></td>"
+                         "<td align=center bgColor='#C9C7CF' colspan=2><b>Приход</b></td><td align=center bgColor='#C9C7CF' colspan=2><b>Расход</b></td><td align=center bgColor='#C9C7CF'><b>Корр</b>"
+                         "<td align=center bgColor='#C9C7CF' colspan=3><b>Конец</b></td><td align=center bgColor='#C9C7CF' colspan=2><b>Погреш</b></td>");
+    tanksBookData.append("<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>№</td><td align=center bgColor='#C9C7CF'><b>грн</td>"
+                         "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>кг</td>"
+                         "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>кг</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>кг</td>"
+                         "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>кг</td>"
+                         "<td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>кг</td>");
+    for(int i=0;i<modelTanksBook->rowCount();++i){
+        tempStr.clear();
+        tempStr = QString("<td align=right bgColor=%1><b>%2</b></td><td align=right>%3</td><td align=right>%4</td><td></td>")
+                .arg(intToColor(modelTanksBook->data(modelTanksBook->index(i,2)).toUInt()))
+                .arg(modelTanksBook->data(modelTanksBook->index(i,0)).toString())
+                .arg(modelTanksBook->data(modelTanksBook->index(i,1)).toString())
+                .arg(modelTanksBook->data(modelTanksBook->index(i,3)).toString());
+        for(int j=4;j<7;++j){
+            tempStr += QString("<td align=right>%1</td><td align=right>%2</td>")
+                    .arg(displayData(modelTanksBook->data(modelTanksBook->index(i,j))))
+                    .arg(displayData(modelTanksBook->data(modelTanksBook->index(i,j+4))));
+        }
+        tempStr += QString("<td align=right>%1</td><td></td>").arg(displayData(modelTanksBook->data(modelTanksBook->index(i,13))));
+        tempStr += QString("<td align=right>%1</td><td align=right>%2</td>")
+                .arg(displayData(modelTanksBook->data(modelTanksBook->index(i,7))))
+                .arg(displayData(modelTanksBook->data(modelTanksBook->index(i,11))));
+        double pogr = modelTanksBook->data(modelTanksBook->index(i,7)).toDouble()
+                - modelTanksBook->data(modelTanksBook->index(i,4)).toDouble()
+                - modelTanksBook->data(modelTanksBook->index(i,5)).toDouble()
+                + modelTanksBook->data(modelTanksBook->index(i,6)).toDouble()
+                - modelTanksBook->data(modelTanksBook->index(i,13)).toDouble();
+        tempStr += QString("<td align=right>%1</td>").arg(displayData(pogr));
+        pogr = modelTanksBook->data(modelTanksBook->index(i,11)).toDouble()
+                        - modelTanksBook->data(modelTanksBook->index(i,8)).toDouble()
+                        - modelTanksBook->data(modelTanksBook->index(i,9)).toDouble()
+                        + modelTanksBook->data(modelTanksBook->index(i,10)).toDouble()
+                        - modelTanksBook->data(modelTanksBook->index(i,14)).toDouble();
+        tempStr += QString("<td align=right>%1</td>").arg(displayData(pogr));
+        tanksBookData.append(tempStr);
+    }
+
+    modelTanksFackt = new QSqlQueryModel();
+    strSQL = QString("SELECT F.SHORTNAME, T.TANK_ID, T.COLOR, "
+                     "GF.FUELHEIGHT AS FUELHEIGHT_FROM, GF.FUELAMOUNT AS FUELAMOUNT_FROM, "
+                     "F_ROUNDTO((SELECT SUM(I.REALAMOUNT) FROM INCOMINGTANKS I WHERE I.TERMINAL_ID = C.TERMINAL_ID AND I.SHIFT_ID = C.SHIFT_ID AND I.TANK_ID = C.TANK_ID),2) AS ADD_FROM_INCOMING, "
+                     "F_ROUNDTO((SELECT SUM(S2.GIVE) FROM SALEORDERS S2 WHERE S2.TERMINAL_ID = T.TERMINAL_ID AND S2.SHIFT_ID = C.SHIFT_ID AND S2.TANK_ID = T.TANK_ID),2) AS SALE, "
+                     "GL.FUELHEIGHT AS FUELHEIGHT_TO,  GL.FUELAMOUNT AS FUELAMOUNT_TO, "
+                     "F_ROUNDTO((SELECT SUM(S1.GIVE) FROM SALEORDERS S1 WHERE S1.TERMINAL_ID = C.TERMINAL_ID AND S1.SHIFT_ID = C.SHIFT_ID AND S1.PAYTYPE_ID = 0 AND S1.TANK_ID = C.TANK_ID),2) AS ADD_FROM_SALES, "
+                     "F.CODENAME "
+                     "FROM TANKSALDOS C "
+                     "LEFT JOIN TANKS T ON T.TERMINAL_ID = C.TERMINAL_ID AND T.TANK_ID = C.TANK_ID "
+                     "LEFT JOIN FUELS F ON F.FUEL_ID = C.FUEL_ID "
+                     "LEFT JOIN GAUGINGS GF ON GF.TERMINAL_ID = C.TERMINAL_ID AND GF.GAUGING_ID = C.GAUGINGFROM_ID "
+                     "LEFT JOIN GAUGINGS GL ON GL.TERMINAL_ID = T.TERMINAL_ID AND GL.GAUGING_ID = C.GAUGINGTO_ID "
+                     "WHERE C.TERMINAL_ID = %1 AND C.SHIFT_ID = %2 "
+                     "ORDER BY F.CODENAME, T.COLOR, T.TANK_ID")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelTanksFackt->setQuery(strSQL,dbObj);
+
+    tanksFacktData.clear();
+    tanksFacktData.append("<td bgColor='#C9C7CF' colspan=2><td align=center bgColor='#C9C7CF' colspan=2><b>Начало</b></td>"
+                         "<td align=center bgColor='#C9C7CF'><b>Приход</b></td><td align=center bgColor='#C9C7CF'><b>Расход</b><td align=center bgColor='#C9C7CF' colspan=2><b>Конец</b></td>"
+                         "<td align=center bgColor='#C9C7CF'><b>Погреш</b></td>");
+    tanksFacktData.append("<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>№</td>"
+                          "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>л</td>"
+                          "<td align=center bgColor='#C9C7CF'><b>мм</td><td align=center bgColor='#C9C7CF'><b>л</td><td align=center bgColor='#C9C7CF'><b>л</td>");
+    for(int i=0;i<modelTanksFackt->rowCount();++i){
+        tempStr = QString("<td align=right bgColor=%1><b>%2</b></td> <td align=right>%3</td>")
+                .arg(intToColor(modelTanksFackt->data(modelTanksFackt->index(i,2)).toUInt()))
+                .arg(modelTanksFackt->data(modelTanksFackt->index(i,0)).toString())
+                .arg(modelTanksFackt->data(modelTanksFackt->index(i,1)).toString());
+        for(int j=3;j<9;++j){
+            tempStr += QString("<td align=right>%1</td>")
+                    .arg(displayData(modelTanksFackt->data(modelTanksFackt->index(i,j))));
+        }
+        double pogr = modelTanksFackt->data(modelTanksFackt->index(i,8)).toDouble()
+                - modelTanksFackt->data(modelTanksFackt->index(i,4)).toDouble()
+                - modelTanksFackt->data(modelTanksFackt->index(i,5)).toDouble()
+                + modelTanksFackt->data(modelTanksFackt->index(i,6)).toDouble();
+        tempStr += QString("<td align=right>%1</td>").arg(displayData(pogr));
+        tanksFacktData.append(tempStr);
+    }
+
+
+
 
 }
 

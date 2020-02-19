@@ -60,5 +60,21 @@ font-size: 10pt; /* Размер шрифта в пунктах */
             {end incom}
             </table>
         {end incomingYes}
+        <br><B>Емкости - книжные данные:</B>
+        <TABLE cellSpacing=0 border=1>
+        {loop tanksbook}
+            <tr>
+                {tanksbook.bookData}
+            </tr>
+        {end tanksbook}
+        </table>
+        <br><B>Емкости - фактические данные:</B>
+        <TABLE cellSpacing=0 border=1>
+        {loop tanksfackt}
+            <tr>
+                {tanksfackt.facktdata}
+            </tr>
+        {end tanksfackt}
+        </table>
     </body>
 </html>

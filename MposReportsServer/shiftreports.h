@@ -35,8 +35,12 @@ private:
     QSqlQueryModel *modelSalesFuels;
     QSqlQueryModel *modelSalFID;
     QSqlQueryModel *modelIncoming;
+    QSqlQueryModel *modelTanksBook;
+    QSqlQueryModel *modelTanksFackt;
     QStringList counterSales;
     QStringList tdRows;
+    QStringList tanksBookData;
+    QStringList tanksFacktData;
 
 
 };
