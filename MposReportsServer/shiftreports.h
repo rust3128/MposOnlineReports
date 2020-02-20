@@ -23,12 +23,14 @@ private:
     QString displayData(QVariant dat);
     QString intToColor(uint col);
     QVariant columnModelSum(QSqlQueryModel *mod, int column);
+    QString tablePaytypeSale(int paytypeID);
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
     uint objectID;
     uint shiftID;
     uint terminalID;
+    int rowCountAP;
     QStringList termData;
     QSqlQueryModel *modelCounters;
     QSqlQueryModel *modelActivPaytypes;

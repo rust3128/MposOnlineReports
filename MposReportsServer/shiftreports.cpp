@@ -102,8 +102,69 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
         t.setVariable("tanksfackt"+number+".facktdata", tanksFacktData.at(i));
     }
 
+    //Отпуски по видам оплат
+    t.loop("paytypesale",rowCountAP);
+    for(int i=0; i<rowCountAP;++i){
+        QString numberAP = QString::number(i);
+        t.setVariable("paytypesale"+numberAP+".paytypename", modelActivPaytypes->data(modelActivPaytypes->index(i,1)).toString());
+        t.setVariable("paytypesale"+numberAP+".paytypeSub", modelActivPaytypes->data(modelActivPaytypes->index(i,3)).toString());
+        t.setVariable("paytypesale"+numberAP+".paytypeTable", tablePaytypeSale(modelActivPaytypes->data(modelActivPaytypes->index(i,0)).toInt()));
+    }
+
     response.write(t.toUtf8(),true);
 }
+
+QString ShiftReports::tablePaytypeSale(int paytypeID)
+{
+    QString tableRes;
+    QSqlQueryModel *saleModel = new QSqlQueryModel();
+
+    QString strSelect = QString("SELECT F.FUEL_ID, F.SHORTNAME, F.CODENAME, T.TANK_ID, T.COLOR AS COLOR, "
+                                "CL.NAME AS FIRM_NAME, "
+                                "SUM(F_ROUNDTO(S.GIVE, 2)) AS GIVE, "
+                                "SUM(F_ROUNDTO(S.SUMMA, 2)) AS D_SUMMA, "
+                                "SUM(F_ROUNDTO(S.DISCOUNTSUMMA, 2)) AS DISCOUNT, "
+                                "SUM(F_ROUNDTO(S.SUMMA - S.DISCOUNTSUMMA, 2)) AS SUMMA, "
+                                "COUNT(*) AS SALES_COUNT "
+                                "FROM GET_FSALES( %1, %2, %2, -1, %3, -1, -1, -1, -1 ) S "
+                                "LEFT JOIN FUELS F ON F.FUEL_ID = S.FUEL_ID "
+                                "LEFT JOIN TANKS T ON T.TERMINAL_ID = S.TERMINAL_ID AND T.TANK_ID = S.TANK_ID "
+                                "LEFT JOIN FSALEINFOS FSL ON FSL.TERMINAL_ID = S.TERMINAL_ID AND FSL.FSALEINFO_ID = S.SALEORDER_ID "
+                                "LEFT JOIN CLIENTS CL ON CL.PAYTYPE_ID = S.PAYTYPE_ID AND CL.CODE = FSL.CODE "
+                                "GROUP BY F.FUEL_ID, F.SHORTNAME, CL.NAME, T.TANK_ID, T.COLOR, F.CODENAME ORDER BY F.CODENAME, F.FUEL_ID")
+            .arg(terminalID)
+            .arg(shiftID)
+            .arg(paytypeID);
+    saleModel->setQuery(strSelect,dbObj);
+    const int smRowCount = saleModel->rowCount();
+    qDebug() << "Model SALE " << saleModel->lastError().text();
+    qDebug() << "Model SALE last query" << saleModel->query().lastQuery();
+    qDebug() << "Model SALE RowCount" << smRowCount;
+    tableRes = "<TABLE cellSpacing=0 border=1>";
+    //Заголовок
+    tableRes += "<tr bgColor='#C9C7CF' align=center><td><b>НП</b></td><td><b>Организация</b></td><td colspan=2><b>Реализация</b></td>"
+                         "<td><b>Цена ср.</b></td><td><b>Сумма</b></td><td><b>Скидка</b></td><td><b>Итого</b></td><td><b>Чеков</b></td></tr>";
+    tableRes += "<tr bgColor='#C9C7CF' align=center><td></td><td></td><td><b>л</b></td><td><b>кг</b></td><td></td><td></td><td></td><td></td><td></td></tr>";
+    for(int i=0;i<smRowCount;++i){
+        tableRes += "<tr>";
+        tableRes += QString("<td align=center bgColor=%1><b>%2</b></td>")
+                .arg(intToColor(saleModel->data(saleModel->index(i,4)).toUInt()))
+                .arg(saleModel->data(saleModel->index(i,1)).toString());
+        tableRes += QString("<td align=left>%1</td>").arg(saleModel->data(saleModel->index(i,5)).toString());
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,6))));
+        tableRes += QString("<td align=right>%1</td>").arg("скоро");
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,9)).toDouble() / saleModel->data(saleModel->index(i,6)).toDouble()) );
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,7))));
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,8))));
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,9))));
+        tableRes += QString("<td align=right>%1</td>").arg(saleModel->data(saleModel->index(i,10)).toInt());
+        tableRes += "</tr>";
+    }
+
+    tableRes += "</table>";
+    return  tableRes;
+}
+
 
 void ShiftReports::openObjectDB()
 {
@@ -150,8 +211,11 @@ void ShiftReports::openObjectDB()
 
 
     modelActivPaytypes = new QSqlQueryModel();
-    strSQL = QString("SELECT DISTINCT S.PAYTYPE_ID, P.SHORTNAME FROM GET_FSALES( %1, %2, %2, -1, -1, -1, -1, -1, -1 ) S "
-                     "LEFT JOIN PAYTYPES P ON P.PAYTYPE_ID = S.PAYTYPE_ID "
+    strSQL = QString("SELECT DISTINCT S.PAYTYPE_ID AS PAYTYPE_NEW, P.NAME, P.FUELTYPE, PP.NAME AS POS_PAYTYPE_NAME "
+                     "FROM GET_FSALES( %1, %2, %2, -1, -1, -1, -1, -1, -1 ) S "
+                          "LEFT JOIN PAYTYPES P ON P.PAYTYPE_ID = S.PAYTYPE_ID "
+                          "LEFT JOIN POSPAYTYPES PP ON PP.POSPAYTYPE_ID = P.FUELTYPE "
+                     "WHERE S.PAYTYPE_ID <> 0 "
                      "ORDER BY S.TERMINAL_ID, S.SHIFT_ID, S.PAYTYPE_ID")
             .arg(terminalID)
             .arg(shiftID);
@@ -180,7 +244,7 @@ void ShiftReports::openObjectDB()
     modelSalFID->setQuery(strSQL,dbObj);
     counterSales.clear();
     QString tempStr = "<td align=center bgColor='#C9C7CF'><b>НП</td><td align=center bgColor='#C9C7CF'><b>По счетч</td><td align=center bgColor='#C9C7CF'><b>Ав пролив</td>";
-    const int rowCountAP = modelActivPaytypes->rowCount();
+    rowCountAP = modelActivPaytypes->rowCount();
     for(int i=0;i<rowCountAP;++i) {
         tempStr += "<td align=center bgColor='#C9C7CF'><b>"+modelActivPaytypes->data(modelActivPaytypes->index(i,1)).toString()+"</td>";
     }
@@ -384,6 +448,8 @@ void ShiftReports::openObjectDB()
         tanksFacktData.append(tempStr);
     }
 
+    //Отпуски по видам оплат
+
 
 
 
@@ -422,3 +488,4 @@ QVariant ShiftReports::columnModelSum(QSqlQueryModel *mod, int column)
     }
     return sum;
 }
+

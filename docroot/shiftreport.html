@@ -76,5 +76,10 @@ font-size: 10pt; /* Размер шрифта в пунктах */
             </tr>
         {end tanksfackt}
         </table>
+        <!--Продажи по активным видам оплат        -->
+        {loop paytypesale}
+            <br><b>{paytypesale.paytypename} ({paytypesale.paytypeSub}):<br></b>
+            {paytypesale.paytypeTable}
+        {end paytypesale}
     </body>
 </html>
