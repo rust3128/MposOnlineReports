@@ -145,6 +145,7 @@ QString ShiftReports::tablePaytypeSale(int paytypeID)
     tableRes += "<tr bgColor='#C9C7CF' align=center><td><b>НП</b></td><td><b>Организация</b></td><td colspan=2><b>Реализация</b></td>"
                          "<td><b>Цена ср.</b></td><td><b>Сумма</b></td><td><b>Скидка</b></td><td><b>Итого</b></td><td><b>Чеков</b></td></tr>";
     tableRes += "<tr bgColor='#C9C7CF' align=center><td></td><td></td><td><b>л</b></td><td><b>кг</b></td><td></td><td></td><td></td><td></td><td></td></tr>";
+    double sumWeight=0, weight;
     for(int i=0;i<smRowCount;++i){
         tableRes += "<tr>";
         tableRes += QString("<td align=center bgColor=%1><b>%2</b></td>")
@@ -152,7 +153,9 @@ QString ShiftReports::tablePaytypeSale(int paytypeID)
                 .arg(saleModel->data(saleModel->index(i,1)).toString());
         tableRes += QString("<td align=left>%1</td>").arg(saleModel->data(saleModel->index(i,5)).toString());
         tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,6))));
-        tableRes += QString("<td align=right>%1</td>").arg("скоро");
+        weight = calcWeight(saleModel->data(saleModel->index(i,3)).toInt(),saleModel->data(saleModel->index(i,6)).toDouble());
+        sumWeight +=weight;
+        tableRes += QString("<td align=right>%1</td>").arg(displayData(weight));
         tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,9)).toDouble() / saleModel->data(saleModel->index(i,6)).toDouble()) );
         tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,7))));
         tableRes += QString("<td align=right>%1</td>").arg(displayData(saleModel->data(saleModel->index(i,8))));
@@ -160,9 +163,35 @@ QString ShiftReports::tablePaytypeSale(int paytypeID)
         tableRes += QString("<td align=right>%1</td>").arg(saleModel->data(saleModel->index(i,10)).toInt());
         tableRes += "</tr>";
     }
-
+    tableRes += "<tr>";
+    tableRes += "<td><b>Итого</b></td><td></td>"+QString("<td align=right><b>%1</b>d</td>").arg(displayData(columnModelSum(saleModel,6)));
+    tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(sumWeight))+"<td></td>";
+    tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,7)));
+    tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,8)));
+    tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,9)));
+    tableRes += QString("<td align=right><b>%1</b></td>").arg(columnModelSum(saleModel,10).toInt());
+    tableRes += "</tr>";
     tableRes += "</table>";
     return  tableRes;
+}
+
+double ShiftReports::calcWeight(int tankID, double give)
+{
+    if(give <= 0.005) {
+        return 0;
+    }
+    double totalGive =0;
+    double weightSub =0;
+    for(int i=0;i<modelTankSaldos->rowCount();++i){
+        if(modelTankSaldos->data(modelTankSaldos->index(i,0)).toInt() == tankID){
+            totalGive = modelTankSaldos->data(modelTankSaldos->index(i,1)).toDouble();
+            weightSub = modelTankSaldos->data(modelTankSaldos->index(i,2)).toDouble();
+            break;
+        }
+    }
+    if(totalGive < 0.005)
+        return 0;
+    return give * (weightSub / totalGive);
 }
 
 
@@ -448,7 +477,13 @@ void ShiftReports::openObjectDB()
         tanksFacktData.append(tempStr);
     }
 
-    //Отпуски по видам оплат
+    //Model TankSaldos
+    modelTankSaldos = new QSqlQueryModel();
+    strSQL = QString("SELECT TANK_ID, COALESCE(BOOKSUB,0) - COALESCE(BOOKADDSUB,0) AS BOOKSUB, WEIGHT_SUB FROM TANKSALDOS "
+                     "WHERE TERMINAL_ID=%1 AND SHIFT_ID=%2")
+            .arg(terminalID)
+            .arg(shiftID);
+    modelTankSaldos->setQuery(strSQL,dbObj);
 
 
 

@@ -24,6 +24,7 @@ private:
     QString intToColor(uint col);
     QVariant columnModelSum(QSqlQueryModel *mod, int column);
     QString tablePaytypeSale(int paytypeID);
+    double calcWeight(int tankID, double give);
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
@@ -39,6 +40,7 @@ private:
     QSqlQueryModel *modelIncoming;
     QSqlQueryModel *modelTanksBook;
     QSqlQueryModel *modelTanksFackt;
+    QSqlQueryModel *modelTankSaldos;
     QStringList counterSales;
     QStringList tdRows;
     QStringList tanksBookData;
