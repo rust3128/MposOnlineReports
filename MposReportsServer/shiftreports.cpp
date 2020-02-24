@@ -40,9 +40,10 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     Template t=objectsList->getTemplate("shiftreport");
 
-    t.setVariable("terminalID", termData.at(0));
-    t.setVariable("name", termData.at(1));
-    t.setVariable("address", termData.at(2));
+    t.setVariable("name", terminalName);
+    t.setVariable("shiftdata",shiftData);
+    t.setVariable("operator", operatorFIO);
+
 
     //Таблица счетчики
     int rowCount = modelCounters->rowCount();
@@ -111,7 +112,49 @@ void ShiftReports::service(HttpRequest &request, HttpResponse &response)
         t.setVariable("paytypesale"+numberAP+".paytypeTable", tablePaytypeSale(modelActivPaytypes->data(modelActivPaytypes->index(i,0)).toInt()));
     }
 
+    //Наличные в кассе
+    t.setVariable("cashdata", tableCashData());
+
     response.write(t.toUtf8(),true);
+}
+
+QString ShiftReports::tableCashData()
+{
+    QString cashTable;
+    QSqlQuery *q = new QSqlQuery(dbObj);
+    q->exec("select m.svalue from migrateoptions m where m.migrateoption_id = 930");
+    q->next();
+    int docID = q->value(0).toInt();
+    q->finish();
+    if(docID<0) docID = 0;
+    double sAddIn = 0;
+    if(docID != 0) {
+        q->prepare("F_ROUNDTO( ( SELECT SUM( D.SUMMA ) FROM CASHDOCS D WHERE D.TERMINAL_ID = C.TERMINAL_ID AND D.SHIFT_ID = C.SHIFT_ID AND D.POS_ID = C.POS_ID AND D.CASHDOCSTYPE_ID = :docID ), 2 )");
+        q->bindValue(":docID", docID);
+        q->exec();
+        q->next();
+        sAddIn = q->value(0).toDouble();
+    }
+    q->finish();
+    q->prepare("SELECT SUM( F_ROUNDTO( SUMMA, 2 ) ) FROM SERVICECHECKS WHERE TERMINAL_ID = ^terminalID AND SHIFT_ID = :shiftID AND CHECK_TYPE = 1");
+    q->bindValue(":terminalID", terminalID);
+    q->bindValue(":shiftID", shiftID);
+    q->exec();
+    q->next();
+    double collectedFromSafe = q->value(0).toDouble();
+
+
+
+
+    cashTable = "<TABLE cellSpacing=0 border=1>";
+    //Заголовок
+    cashTable += "<tr bgColor='#C9C7CF' align=center><td rowspan=2><b>Касса</b></td><td colspan=2><b>На начало</b></td><td rowspan=2><b>Взнос</b></td><td colspan=2><b>Изъятие</b></td><td rowspan=2><b>Получено</b></td>"
+                 "<td rowspan=2><b>Возврат</b></td><td rowspan=2><b>Продажи</b></td><td colspan=2><b>На конец</b></td><td  rowspan=2><b>БН оплата</b></td><td rowspan=2><b>БН возврат</b></td><td rowspan=2><b>БН продажи</b></td></tr>";
+    cashTable += "<tr bgColor='#C9C7CF' align=center><td><b>В кассе</b></td><td><b>В сейфе</b></td><td><b>Из кассы</b></td><td><b>Из сейфа</b></td>"
+                 "<td><b>В кассе</b></td><td><b>В сейфе</b></td></tr>";
+
+    cashTable += "</table>";
+    return cashTable;
 }
 
 QString ShiftReports::tablePaytypeSale(int paytypeID)
@@ -137,9 +180,6 @@ QString ShiftReports::tablePaytypeSale(int paytypeID)
             .arg(paytypeID);
     saleModel->setQuery(strSelect,dbObj);
     const int smRowCount = saleModel->rowCount();
-    qDebug() << "Model SALE " << saleModel->lastError().text();
-    qDebug() << "Model SALE last query" << saleModel->query().lastQuery();
-    qDebug() << "Model SALE RowCount" << smRowCount;
     tableRes = "<TABLE cellSpacing=0 border=1>";
     //Заголовок
     tableRes += "<tr bgColor='#C9C7CF' align=center><td><b>НП</b></td><td><b>Организация</b></td><td colspan=2><b>Реализация</b></td>"
@@ -195,6 +235,8 @@ double ShiftReports::calcWeight(int tankID, double give)
 }
 
 
+
+
 void ShiftReports::openObjectDB()
 {
     QSqlQuery *q = new QSqlQuery(db);
@@ -219,11 +261,36 @@ void ShiftReports::openObjectDB()
         qCritical() << "Не могу отрыть базу данных АЗС" << dbObj.lastError().text() ;
         return;
     }
-    termData.clear();
-    termData.append(q->value(4).toString());
-    termData.append(q->value(5).toString());
-    termData.append(q->value(6).toString());
     q->finish();
+    QSqlQuery *qo = new QSqlQuery(dbObj);
+    qo->prepare("SELECT NAME FROM TERMINALS WHERE TERMINAL_ID = :terminalID");
+    qo->bindValue(":terminalID",terminalID);
+    qo->exec();
+    qo->next();
+    terminalName = qo->value(0).toString().trimmed();
+    qo->finish();
+    qo->prepare("SELECT s.DATOPEN, s.DATCLOSE, o.fio, s.ZNUMBER FROM SHIFTS s "
+                "left join operators o ON o.operator_id = s.operator_id "
+                "WHERE s.TERMINAL_ID = :terminalID AND s.SHIFT_ID = :shiftID");
+    qo->bindValue(":terminalID", terminalID);
+    qo->bindValue(":shiftID",shiftID);
+    qo->exec();
+    qo->next();
+    shiftData = QString("Отчет за смену № %1, Z-отчет № %2, %3 - %4")
+            .arg(shiftID)
+            .arg(qo->value(3).toString())
+            .arg(qo->value(0).toDateTime().toString("dd.MM.yyyy hh:mm:ss"))
+            .arg(qo->value(1).toDateTime().toString("dd.MM.yyyy hh:mm:ss"));
+    operatorFIO = qo->value(2).toString().trimmed();
+    qo->finish();
+    qo->prepare("SELECT count(*) FROM CASHS WHERE TERMINAL_ID = :terminalID AND SHIFT_ID = :shiftID");
+    qo->bindValue(":terminalID", terminalID);
+    qo->bindValue(":shiftID",shiftID);
+    qo->exec();
+    qo->next();
+    posCount = q->value(0).toInt();
+
+
     modelCounters = new QSqlQueryModel();
     QString strSQL = QString("SELECT F.SHORTNAME, F.CODENAME, T.COLOR, C.DISPENSER_ID, C.E_FROM, C.E_TO, (C.E_TO - C.E_FROM) AS E_ADD, "
                              "(SELECT SUM(F_ROUNDTO(S.GIVE, 2)) FROM SALEORDERS S "

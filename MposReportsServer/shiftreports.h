@@ -25,6 +25,7 @@ private:
     QVariant columnModelSum(QSqlQueryModel *mod, int column);
     QString tablePaytypeSale(int paytypeID);
     double calcWeight(int tankID, double give);
+    QString tableCashData();
 private:
     QSqlDatabase db;
     QSqlDatabase dbObj;
@@ -32,7 +33,11 @@ private:
     uint shiftID;
     uint terminalID;
     int rowCountAP;
-    QStringList termData;
+    QString terminalName;
+    QString shiftData;
+    QString operatorFIO;
+    int posCount;
+
     QSqlQueryModel *modelCounters;
     QSqlQueryModel *modelActivPaytypes;
     QSqlQueryModel *modelSalesFuels;

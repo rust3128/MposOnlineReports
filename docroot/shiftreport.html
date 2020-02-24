@@ -11,6 +11,9 @@ font-size: 10pt; /* Размер шрифта в пунктах */
 
 </head>
     <body>
+    <b>{name}<b><br>
+    <b>{shiftdata}<b><br>
+    <b>Оператор: {operator}<b><br>
     <br><B>Счетчики - состояние:</B>
         <TABLE cellSpacing=0 border=1>
         <tr>
@@ -81,5 +84,7 @@ font-size: 10pt; /* Размер шрифта в пунктах */
             <br><b>{paytypesale.paytypename} ({paytypesale.paytypeSub}):<br></b>
             {paytypesale.paytypeTable}
         {end paytypesale}
+        <h2>Наличные в кассе<h2>
+        {cashdata}
     </body>
 </html>
