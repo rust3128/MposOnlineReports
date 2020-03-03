@@ -143,15 +143,35 @@ QString ShiftReports::tableCashData()
     q->next();
     double collectedFromSafe = q->value(0).toDouble();
 
-
-
-
     cashTable = "<TABLE cellSpacing=0 border=1>";
     //Заголовок
     cashTable += "<tr bgColor='#C9C7CF' align=center><td rowspan=2><b>Касса</b></td><td colspan=2><b>На начало</b></td><td rowspan=2><b>Взнос</b></td><td colspan=2><b>Изъятие</b></td><td rowspan=2><b>Получено</b></td>"
                  "<td rowspan=2><b>Возврат</b></td><td rowspan=2><b>Продажи</b></td><td colspan=2><b>На конец</b></td><td  rowspan=2><b>БН оплата</b></td><td rowspan=2><b>БН возврат</b></td><td rowspan=2><b>БН продажи</b></td></tr>";
     cashTable += "<tr bgColor='#C9C7CF' align=center><td><b>В кассе</b></td><td><b>В сейфе</b></td><td><b>Из кассы</b></td><td><b>Из сейфа</b></td>"
                  "<td><b>В кассе</b></td><td><b>В сейфе</b></td></tr>";
+
+    QString strSQL;
+    bool result = false;
+    bool active;
+    if(posCount > 1){
+        active = false;
+        strSQL = QString("SELECT C.POS_ID, P.NAME AS POSNAME, C.CASHRESTIN + %1 AS CASHRESTIN, C.CASHIN - %1 AS CASHIN, "
+                         "C.CASHOUT, C.CASHSALEIN, C.CASHSALEOUT, C.CASHRESTOUT, C.CASHLESSSALEIN, C.CASHLESSSALEOUT, "
+                         "C2.SAFESUM AS SAFESUM_FROM, C.SAFESUM, "
+                                 "CASE "
+                                   "WHEN P.ISMASTER = 'T' THEN %2 "
+                                   "ELSE 0.00 "
+                                 "END AS COLLECT_SAFE "
+                                 "FROM CASHS C "
+                                  "LEFT JOIN CASHS C2 ON C2.TERMINAL_ID = C.TERMINAL_ID AND C2.SHIFT_ID = C.SHIFT_ID - 1 AND C2.POS_ID = C.POS_ID "
+                                  "LEFT JOIN POSS P ON P.TERMINAL_ID = C.TERMINAL_ID AND P.POS_ID = C.POS_ID "
+                                 "WHERE C.TERMINAL_ID = %3 AND C.SHIFT_ID = %4 "
+                                 "ORDER BY C.POS_ID")
+                .arg(sAddIn)
+                .arg(collectedFromSafe)
+                .arg(terminalID)
+                .arg(shiftID);
+    }
 
     cashTable += "</table>";
     return cashTable;
@@ -204,7 +224,7 @@ QString ShiftReports::tablePaytypeSale(int paytypeID)
         tableRes += "</tr>";
     }
     tableRes += "<tr>";
-    tableRes += "<td><b>Итого</b></td><td></td>"+QString("<td align=right><b>%1</b>d</td>").arg(displayData(columnModelSum(saleModel,6)));
+    tableRes += "<td><b>Итого</b></td><td></td>"+QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,6)));
     tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(sumWeight))+"<td></td>";
     tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,7)));
     tableRes += QString("<td align=right><b>%1</b></td>").arg(displayData(columnModelSum(saleModel,8)));
